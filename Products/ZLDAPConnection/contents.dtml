@@ -1,8 +1,5 @@
-<HTML>
-<HEAD>
-<TITLE>Contents</TITLE>
-</HEAD>
-<BODY BGCOLOR="#FFFFFF" LINK="#000099" VLINK="#555555">
+<dtml-var manage_page_header>
+
 <!--#var manage_tabs-->
 <P>
 
@@ -71,10 +68,4 @@ will be automatically added to the entry. Other attributes may be entered by usi
 <br><br><br><br><br><br><br><br>
 <br><br><br><br><br><br><br><br>
 
-
-
-
-
-
-</BODY>
-</HTML>
+<dtml-var manage_page_footer>

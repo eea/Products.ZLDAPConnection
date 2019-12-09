@@ -99,7 +99,3 @@ class LDAPConnectionAccessors(object):
         # always committing.
         if not transactional:
             self._isCommitting = 1
-
-#import Globals
-#Globals.default__class_init__(LDAPConnectionAccessors)
-

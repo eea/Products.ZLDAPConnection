@@ -1,8 +1,5 @@
-<html>
- <head>
-  <title>Browse &dtml-title_and_id;</title>
- </head>
- <body bgcolor="#ffffff">
+<dtml-var manage_page_header>
+
  <dtml-var manage_tabs>
 
  <dtml-if name="canBrowse">
@@ -31,5 +28,4 @@
   <dtml-if name="openc">not browsable<dtml-else>closed</dtml-if>.</em></p>
  </dtml-if>
 
- </body>
-</html>
+<dtml-var manage_page_footer>

@@ -1,13 +1,11 @@
-"""\
-LDAP Entry Objects
+""" LDAP Entry Objects
 """
-
-
-__version__ = "$Revision: 1.1 $"[11:-2]
-
+from six.moves import filter
+from six.moves import map
 import Acquisition, OFS, string
-from Globals import HTMLFile, MessageDialog; import Globals
-import ldap, urllib, UserList
+from App.Dialogs import MessageDialog
+from App.special_dtml import HTMLFile
+import ldap, six.moves.urllib.request, six.moves.urllib.parse, six.moves.urllib.error
 
 ConnectionError='ZLDAP Connection Error'
 
@@ -17,10 +15,11 @@ def isNotBlank(s):
         return 0
     else: return 1
 
-class AttrWrap(UserList.UserList):
-    """simple attr-wrapper for LDAP attributes"""
-    def __str__(self):
-        return string.join(self.data,', ')
+#class AttrWrap(UserList.UserList):
+#    """simple attr-wrapper for LDAP attributes"""
+#    import Userlist
+#    def __str__(self):
+#        return string.join(self.data,', ')
 
 class GenericEntry(Acquisition.Implicit):
     """\
@@ -82,7 +81,7 @@ class GenericEntry(Acquisition.Implicit):
 
     def _connection(self):
         if self.__connection is None:
-            raise ConnectionError, 'No connection object for this entry'
+            raise ConnectionError('No connection object for this entry')
         else:
             return self.__connection
 
@@ -91,27 +90,27 @@ class GenericEntry(Acquisition.Implicit):
         """getitem is used to get sub-entries, not attributes"""
         if self.__subentries:
             se=self._subentries()
-            if se.has_key(key):
+            if key in se:
                 return se[key]
-        key = '%s, %s' % (urllib.unquote(key), self.dn)
+        key = '%s, %s' % (six.moves.urllib.parse.unquote(key), self.dn)
         conn= self._connection()
         if conn.hasEntry(key):
             return conn.getEntry(key, self)
         else:
-            raise IndexError, key
+            raise IndexError(key)
 
     def __getattr__(self, attr):
-        if self._data.has_key(attr):
-            return AttrWrap(self._data[attr])
+        if attr in self._data:
+            return list(self._data[attr])
         else:
-            raise AttributeError, attr
+            raise AttributeError(attr)
 
     #### Direct access for setting/getting/unsetting attributes
     def get(self, attr):
-        if self._data.has_key(attr):
+        if attr in self._data:
             return self._data[attr]
         else:
-            raise AttributeError, attr
+            raise AttributeError(attr)
 
     def set(self, key, value):
         """ Sets individual items """
@@ -144,7 +143,7 @@ class GenericEntry(Acquisition.Implicit):
         data = self._data
         mod_d = self._mod_delete
         for item in attr:
-            if data.has_key(item):
+            if item in data:
                 del data[attr]
                 mod_d.append(attr)
 
@@ -154,21 +153,21 @@ class GenericEntry(Acquisition.Implicit):
     ### a .set calls this directly, while in the TransactionalModel this
     ### gets called by the Transaction system at commit time.
     def _modify(self):
-	modlist = []
+        modlist = []
 
-	for attribute, values in self._data.items():
-	    modlist.append((ldap.MOD_REPLACE, attribute, values))
-        for attribute in self._mod_delete:
-            modlist.append((ldap.MOD_DELETE, attribute, None))
-
-	self._connection()._modifyEntry(self.dn, modlist)
+        for attribute, values in self._data.items():
+            modlist.append((ldap.MOD_REPLACE, attribute, values))
+            for attribute in self._mod_delete:
+                modlist.append((ldap.MOD_DELETE, attribute, None))
+    
+        self._connection()._modifyEntry(self.dn, modlist)
         self._mod_delete=[]
         self.__subentries={}
 
     #### Get the ZLDAPConnection object.
     def _connection(self):
         if self.__connection is None:
-            raise ConnectionError, 'Cannot Get Connection'
+            raise ConnectionError('Cannot Get Connection')
         else:
             return self.__connection
 
@@ -196,7 +195,7 @@ class GenericEntry(Acquisition.Implicit):
 
     def _delSubentry(self, entryid):
         subs = self.__subentries
-        if subs.has_key(entryid): del self.__subentries[entryid]
+        if entryid in subs: del self.__subentries[entryid]
 
     ### Deleting Subentries
     def _beforeDelete(self, **ignored):
@@ -232,21 +231,21 @@ class GenericEntry(Acquisition.Implicit):
         # and verify that it doesn't already exist
         dn = "%s,%s" % (string.strip(rdn), self.dn)
         if conn.hasEntry(dn):           # Check the LDAP server directly
-            raise KeyError, "DN '%s' already exists" % dn
+            raise KeyError("DN '%s' already exists" % dn)
 
         # Now split out the first attr based on the RDN (ie 'cn=bob') and
         # turn it into one of our attributes (ie attr[cn] = 'bob')
-        key, value = map(string.strip, string.split(rdn,'='))
+        key, value = list(map(string.strip, string.split(rdn,'=')))
         attrs[key] = value
 
         # If the objectclass is not already set in the attrs, set it now
-        if not attrs.has_key('objectclass'):
+        if 'objectclass' not in attrs:
             attrs['objectclass'] = ['top']
 
         # Instantiate the instance based on the connections EntryFactory
         Entry = conn._EntryFactory()
         entry = Entry(dn, attrs, conn, isNew=1).__of__(self)
-        conn._addEntry(dn, attrs.items()) # Physically add the new entry
+        conn._addEntry(dn, list(attrs.items())) # Physically add the new entry
         self._setSubentry(entry.id, entry)
 
         return entry
@@ -339,7 +338,7 @@ class TransactionalEntry(Acquisition.Implicit):
         data = self._data
         mod_d = self._mod_delete
         for item in attr:
-            if data.has_key(item):
+            if item in data:
                 del data[item]
                 mod_d.append(item)
 
@@ -395,15 +394,15 @@ class TransactionalEntry(Acquisition.Implicit):
         #create the new full DN for new subentry and check its existance
         dn='%s,%s' % (string.strip(rdn), self.dn)
         if c.hasEntry(dn):
-            raise KeyError, "DN '%s' already exists" % dn
+            raise KeyError("DN '%s' already exists" % dn)
 
         # now split out the first attr based on the rdn (ie 'cn=bob', turns
         # into attr['cn'] = 'bob'
-        key, value = map(string.strip,string.split(rdn,'='))
+        key, value = list(map(string.strip,string.split(rdn,'=')))
         attrs[key] = value
 
         #if objectclass is not set in the attrs, set it now
-        if not attrs.has_key('objectclass'):
+        if 'objectclass' not in attrs:
             attrs['objectclass']=['top']
 
         #instantiate the instance based on current instances class
@@ -446,55 +445,53 @@ class ZopeEntry(OFS.SimpleItem.Item):
     #### Entry & Attribute Access Machinery #####################
 
     def attributesMap(self):
-	return self._data.items()
+        return list(self._data.items())
 
     def __bobo_traverse__(self, REQUEST, key):
         ' allow traversal to subentries '
-        key=urllib.unquote(key)
+        key=six.moves.urllib.parse.unquote(key)
         if key in self.objectIds(): return self[key]
         else: return getattr(self,key)
 
     ###### Tree Machinery ######
 
     def tpValues(self):
-	return self._subentries().values()
+        return list(self._subentries().values())
 
     def tpId(self):
-	return self.id
+        return self.id
 
     def tpURL(self):
-	"""Return string to be used as URL relative to parent."""
-	return urllib.quote(self.id)
+        """Return string to be used as URL relative to parent."""
+        return six.moves.urllib.parse.quote(self.id)
 
     ### Object Manager-ish Machinery
     def objectValues(self):
-        return self._subentries().values()
+        return list(self._subentries().values())
 
     def objectIds(self):
-        return self._subentries().keys()
+        return list(self._subentries().keys())
 
     def objectItems(self):
-        return self._subentries().items()
+        return list(self._subentries().items())
 
     ### Zope management stuff
 
     def manage_deleteEntry(self, ids, REQUEST=None):
-	'''Delete marked Entries and all their sub-entries.'''
-
-	for rdn in ids:
+        """ Delete marked Entries and all their sub-entries.
+        """
+        for rdn in ids:
             self._delete_dn(rdn)
-
-	if REQUEST is not None:
-	    return self.manage_contents(self, REQUEST)
-
+        if REQUEST is not None:
+            return self.manage_contents(self, REQUEST)
 
     def manage_newEntry(self, rdn, REQUEST=None):
-	'''Add a new entry'''
-
+        """ Add a new entry
+        """
         e = self.addSubentry(rdn)
 
-	if REQUEST is not None:
-	    return self.manage_contents(self, REQUEST)
+        if REQUEST is not None:
+            return self.manage_contents(self, REQUEST)
         else:
             return e
 
@@ -505,21 +502,19 @@ class ZopeEntry(OFS.SimpleItem.Item):
         return e                        # return the new entry
 
     def manage_addAttribute(self, id, values, REQUEST=None):
-	'''Add an attribute to an LDAP entry'''
-
+        """ Add an attribute to an LDAP entry
+        """
         self.set(id, values)
 
-	if REQUEST is not None:
-	    return self.manage_attributes(self, REQUEST)
-
+        if REQUEST is not None:
+            return self.manage_attributes(self, REQUEST)
 
     def manage_editAttributes(self, REQUEST):
-        """Edit entry's attributes via the web."""
-
+        """ Edit entry's attributes via the web.
+        """
         for attribute in self._data.keys():
-	    values = REQUEST.get(attribute, [])
-            values = filter(isNotBlank, values)   #strip out blanks
-
+            values = REQUEST.get(attribute, [])
+            values = list(filter(isNotBlank, values))   #strip out blanks
             self.set(attribute, values)
 
         return MessageDialog(
@@ -537,7 +532,7 @@ class ZopeEntry(OFS.SimpleItem.Item):
         if REQUEST and not kw:
             kw=REQUEST
 
-        datakeys = self._data.keys()
+        datakeys = list(self._data.keys())
 
         if kw:
             for name, value in kw.items():
