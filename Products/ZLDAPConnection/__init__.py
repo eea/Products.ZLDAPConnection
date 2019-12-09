@@ -1,10 +1,10 @@
 """LDAP Server Connection Package """
 
-import ZLDAP
+from . import ZLDAP
 __version__ = ZLDAP.__version__
 
-# use the propert product registration
 def initialize(context):
+
     context.registerClass(
         ZLDAP.ZLDAPConnection,
         constructors = (ZLDAP.manage_addZLDAPConnectionForm,
@@ -14,4 +14,3 @@ def initialize(context):
                        'Create New Entry Objects',
                        ),
         )
-
