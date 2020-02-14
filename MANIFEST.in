@@ -1,0 +1,7 @@
+include *.md *.rst *.txt
+graft Products
+global-exclude *pyc
+global-exclude *~
+global-exclude *.un~
+
+global-include *.mo
