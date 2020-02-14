@@ -1,6 +1,4 @@
-<html>
-  <head><title>Add LDAP connection</title></head>
-  <body bgcolor="#FFFFFF">
+<dtml-var manage_page_header>
   
     <h2>Add LDAP connection</h2>
     
@@ -71,5 +69,4 @@
     
 	</table>
     </form>
-  </body>
-</html>
+<dtml-var manage_page_footer>

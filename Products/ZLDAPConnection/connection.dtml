@@ -1,12 +1,5 @@
-<html>
- <head>
-  <title>Connection for &dtml-title_or_id;</title>
-  <style type="text/css"><!--
-  .open {color: blue}
-  .close {color: red}
-  --></style>
- </head>
- <body bgcolor="#FFFFFF">
+<dtml-var manage_page_header>
+
   <dtml-var manage_tabs>
 
   <h2>Connection to <code>&dtml-host;:&dtml-port;</code> is
@@ -24,5 +17,4 @@
    </form>
   </dtml-if>
 
- </body>
-</html>
+<dtml-var manage_page_footer>

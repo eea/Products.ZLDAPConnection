@@ -1,7 +1,7 @@
-"""LDAP Server Connection Package """
-
+""" LDAP Server Connection Package
+"""
 from . import ZLDAP
-__version__ = ZLDAP.__version__
+
 
 def initialize(context):
 

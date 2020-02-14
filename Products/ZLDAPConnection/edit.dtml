@@ -1,6 +1,5 @@
-<html> 
-  <head><title>Edit LDAP connection</title></head> 
-  <body bgcolor="#FFFFFF"> 
+<dtml-var manage_page_header>
+
   <dtml-var name="manage_tabs"> 
    
     <h2>Edit LDAP connection <dtml-var name="title_and_id"></h2> 
@@ -84,5 +83,4 @@
      
         </table> 
     </form> 
-  </body> 
-</html>          
+<dtml-var manage_page_footer>

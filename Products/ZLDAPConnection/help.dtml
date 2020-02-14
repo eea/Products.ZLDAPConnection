@@ -1,6 +1,5 @@
-<html>
-<head><title>help for LDAP connections</title></head>
-<body>
+<dtml-var manage_page_header>
+
 <h1>Help for LDAP connections</h1>
 
 <b>Arguments are as follows:</b>
@@ -13,4 +12,4 @@ if no port is specified.
 <dt>Password<dd>The password (if any) to be used to bind to the server.
 </dl>
 
-</body></html>
+<dtml-var manage_page_footer>

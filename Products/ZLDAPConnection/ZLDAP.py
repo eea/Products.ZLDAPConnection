@@ -6,19 +6,18 @@
 
    Now by Jeffrey P Shell <jeffrey@Digicool.com>.
 """
-
-__version__ = "$Revision: 1.1 $"[11:-2]
-
 import ldap
-import urllib
+import six.moves.urllib.request, six.moves.urllib.parse, six.moves.urllib.error
 import time
 import Acquisition
 import AccessControl
 import OFS
-from Globals import HTMLFile, MessageDialog, Persistent
+from Persistence import Persistent
+from App.Dialogs import MessageDialog
+from App.special_dtml import HTMLFile
 
-import LDCAccessors
-from Entry import ZopeEntry, GenericEntry, TransactionalEntry
+from . import LDCAccessors
+from .Entry import ZopeEntry, GenericEntry, TransactionalEntry
 
 ConnectionError='ZLDAP Connection Error'
 
@@ -37,6 +36,7 @@ class ZLDAPConnection(
     isPrincipiaFolderish=1
 
     meta_type='LDAP Connection'
+    zmi_icon = 'fa fa-server'
 
     manage_options=(
         {'label':'Connection Properties','action':'manage_main'},
@@ -120,7 +120,7 @@ class ZLDAPConnection(
 
     ### Tree stuff
     def __bobo_traverse__(self, REQUEST, key):
-        key=urllib.unquote(key)
+        key=six.moves.urllib.parse.unquote(key)
         if hasattr(self, key):
             return getattr(self, key)
         return self.getRoot()[key]
@@ -141,8 +141,7 @@ class ZLDAPConnection(
     def tpc_begin(self,*ignored):
         #make sure we're open!
         if not self.__ping():      #we're not open
-            raise (ConnectionError,
-                   'LDAP Connection is not open for commiting')
+            raise ConnectionError
         self._v_okobjects=[]
 
     def commit(self, o, *ignored):
@@ -171,7 +170,7 @@ class ZLDAPConnection(
                     # we shouldn't need to do anything now that
                     # the mass delete has happened
                 elif o._isNew:
-                    self._addEntry(o.dn, o._data.items())
+                    self._addEntry(o.dn, list(o._data.items()))
                     o._isNew=0
                     del self._v_add[o.dn]
                 else:
@@ -198,7 +197,7 @@ class ZLDAPConnection(
         o._rollback()
         o._registered=0
         if o._isNew:
-            if o.dn in getattr(self,'_v_add',{}).keys():
+            if o.dn in list(getattr(self,'_v_add',{}).keys()):
                 del self._v_add[o.dn]
         self.GetConnection().destroy_cache()
 
@@ -215,7 +214,7 @@ class ZLDAPConnection(
     ### getting entries and attributes
 
     def hasEntry(self, dn):
-        if getattr(self, '_v_add',{}).has_key(dn):
+        if dn in getattr(self, '_v_add',{}):
             #object is marked for adding
             return 1
         elif dn in getattr(self,'_v_delete',()):
@@ -232,10 +231,10 @@ class ZLDAPConnection(
 
     def getRawEntry(self, dn):
         " return raw entry from LDAP module "
-        if getattr(self, '_v_add',{}).has_key(dn):
+        if dn in getattr(self, '_v_add',{}):
             return (dn, self._v_add[dn]._data)
         elif dn in getattr(self,'_v_delete',()):
-            raise ldap.NO_SUCH_OBJECT, "Entry '%s' has been deleted" % dn
+            raise ldap.NO_SUCH_OBJECT("Entry '%s' has been deleted" % dn)
 
         try:
             e=self._connection().search_s(
@@ -243,14 +242,14 @@ class ZLDAPConnection(
                 )
             if e: return e[0]
         except:
-            raise ldap.NO_SUCH_OBJECT, "Cannot retrieve entry '%s'" % dn
+            raise ldap.NO_SUCH_OBJECT("Cannot retrieve entry '%s'" % dn)
 
 
     def getEntry(self, dn, o=None):
         " return **unwrapped** Entry object, unless o is specified "
         Entry = self._EntryFactory()
 
-        if getattr(self, '_v_add',{}).has_key(dn):
+        if dn in getattr(self, '_v_add',{}):
             e=self._v_add[dn]
         else:
             e=self.getRawEntry(dn)
@@ -302,7 +301,7 @@ class ZLDAPConnection(
     ### modifying entries
     def _modifyEntry(self, dn, modlist):
         if not getattr(self,'_isCommitting',0):
-            raise AccessError, 'Cannot modify unless in a commit'
+            raise AccessError('Cannot modify unless in a commit')
             #someone's trying to be sneaky and modify an object
             #outside of a commit.  We're not going to allow that!
         c=self._connection()
@@ -326,28 +325,28 @@ class ZLDAPConnection(
 
     def _deleteEntry(self, dn):
         if not getattr(self, '_isCommitting',0):
-            raise AccessError, 'Cannot delete unless in a commit'
+            raise AccessError('Cannot delete unless in a commit')
         c=self._connection()
         c.delete_s(dn)
 
     ### adding entries
     def _registerAdd(self, o):
         a=getattr(self, '_v_add',{})
-        if not a.has_key(o.dn):
+        if o.dn not in a:
             a[o.dn]=o
         self._v_add=a
 
     def _unregisterAdd(self, o=None, dn=None):
         a=getattr(self, '_v_add',{})
-        if o and o in a.values():
+        if o and o in list(a.values()):
             del a[o.dn]
-        elif dn and a.has_key(dn):
+        elif dn and dn in a:
             del a[dn]
         self._v_add=a
 
     def _addEntry(self, dn, attrs):
         if not getattr(self, '_isCommitting',0):
-            raise AccessError, 'Cannot add unless in a commit'
+            raise AccessError('Cannot add unless in a commit')
         c=self._connection()
         c.add_s(dn, attrs)
 
@@ -369,7 +368,7 @@ class ZLDAPConnection(
             if not self.isOpen(): self._open()
             return self._v_conn
         else:
-            raise ConnectionError, 'Connection Closed'
+            raise ConnectionError('Connection Closed')
 
     GetConnection=_connection
 
@@ -379,8 +378,8 @@ class ZLDAPConnection(
         """
         if not hasattr(self, '_v_conn'):
             self._v_conn = None
-        now = long(time.time())
-        if self._v_openc < now - 300L:
+        now = int(time.time())
+        if self._v_openc < now - 300:
             return 0
         if self._v_conn is None or not self.shouldBeOpen():
             return 0
@@ -416,7 +415,7 @@ class ZLDAPConnection(
             return """
    Error: LDAP Server returned `no such object' for %s. Possibly
    the bind string or password are incorrect"""%(self.bind_as)
-        self._v_openc = long(time.time())
+        self._v_openc = int(time.time())
 
     def manage_open(self, REQUEST=None):
         """ open a connection. """
@@ -509,12 +508,12 @@ class ZLDAPConnection(
 
 def splitHostPort(hostport):
     import string
-    l = string.split(hostport,':')
+    l = str.split(hostport,':')
     host = l[0]
     if len(l) == 1:
         port = 389
     else:
-        port = string.atoi(l[1])
+        port = int(l[1])
     return host, port
 
 
