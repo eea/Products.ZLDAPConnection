@@ -1,10 +1,15 @@
 from setuptools import setup, find_packages
+import os
 
 NAME = 'Products.ZLDAPConnection'
-VERSION = '1.0'
+PATH = NAME.split('.') + ['version.txt']
+VERSION = open(os.path.join(*PATH)).read().strip()
 
 setup(name=NAME,
       version=VERSION,
+      long_description_content_type="text/x-rst",
+      long_description=open("README.rst").read() + "\n" +
+                       open("CHANGES.rst").read(),
       description="ZLDAPConnection Product",
       # Get more strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers
       classifiers=[
