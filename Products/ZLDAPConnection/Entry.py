@@ -79,11 +79,6 @@ class GenericEntry(Acquisition.Implicit):
         r="<Entry instance at %s; %s>" % (id(self), self.dn)
         return r
 
-    def _connection(self):
-        if self.__connection is None:
-            raise ConnectionError('No connection object for this entry')
-        else:
-            return self.__connection
 
     #### Subentry and Attribute Access Machinery ##########
     def __getitem__(self, key):

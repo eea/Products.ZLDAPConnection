@@ -301,7 +301,7 @@ class ZLDAPConnection(
     ### modifying entries
     def _modifyEntry(self, dn, modlist):
         if not getattr(self,'_isCommitting',0):
-            raise AccessError('Cannot modify unless in a commit')
+            raise AttributeError('Cannot modify unless in a commit')
             #someone's trying to be sneaky and modify an object
             #outside of a commit.  We're not going to allow that!
         c=self._connection()
@@ -325,7 +325,7 @@ class ZLDAPConnection(
 
     def _deleteEntry(self, dn):
         if not getattr(self, '_isCommitting',0):
-            raise AccessError('Cannot delete unless in a commit')
+            raise AttributeError('Cannot delete unless in a commit')
         c=self._connection()
         c.delete_s(dn)
 
@@ -346,7 +346,7 @@ class ZLDAPConnection(
 
     def _addEntry(self, dn, attrs):
         if not getattr(self, '_isCommitting',0):
-            raise AccessError('Cannot add unless in a commit')
+            raise AttributeError('Cannot add unless in a commit')
         c=self._connection()
         c.add_s(dn, attrs)
 
@@ -507,7 +507,6 @@ class ZLDAPConnection(
         return 1
 
 def splitHostPort(hostport):
-    import string
     l = str.split(hostport,':')
     host = l[0]
     if len(l) == 1:
