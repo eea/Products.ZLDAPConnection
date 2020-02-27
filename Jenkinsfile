@@ -3,8 +3,8 @@ pipeline {
 
   environment {
         GIT_NAME = "Products.ZLDAPConnection"
+        GIT_HISTORYFILE = "docs/HISTORY.txt"
         SONARQUBE_TAGS = "plonesaas.eea.europa.eu"
-        GIT_HISTORYFILE = "CHANGES.rst"
     }
 
   stages {
