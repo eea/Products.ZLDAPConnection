@@ -2,6 +2,7 @@
 """
 from six.moves import filter
 from six.moves import map
+from transaction import commit
 import Acquisition, OFS, string
 from App.Dialogs import MessageDialog
 from App.special_dtml import HTMLFile
@@ -79,11 +80,6 @@ class GenericEntry(Acquisition.Implicit):
         r="<Entry instance at %s; %s>" % (id(self), self.dn)
         return r
 
-    def _connection(self):
-        if self.__connection is None:
-            raise ConnectionError('No connection object for this entry')
-        else:
-            return self.__connection
 
     #### Subentry and Attribute Access Machinery ##########
     def __getitem__(self, key):
@@ -294,7 +290,7 @@ class TransactionalEntry(Acquisition.Implicit):
             self._data={}
         self._isNew=isNew
         if isNew:
-            get_transaction().register(self)
+            commit()
             self._registered=1
         self._isDeleted=0               #deletion flag
         self._clearSubentries()
@@ -311,7 +307,7 @@ class TransactionalEntry(Acquisition.Implicit):
         is called.
         """
         if not self._registered:
-            get_transaction().register(self)
+            commit()
             self._registered=1
 
         kwdict.update(kw)
@@ -329,7 +325,7 @@ class TransactionalEntry(Acquisition.Implicit):
         Unset (delete) an attribute
         """
         if not self._registered:
-            get_transaction().register(self)
+            commit()
             self._registered=1
 
         if type(attr) is type(''):
@@ -370,7 +366,7 @@ class TransactionalEntry(Acquisition.Implicit):
         c._registerDelete(o.dn)
         o._isDeleted=1
         if not o._registered:
-            get_transaction().register(o)
+            commit()
             o._registered=1
         del self._subentries()[o.id]
 
