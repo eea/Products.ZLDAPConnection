@@ -30,6 +30,7 @@ setup(name=NAME,
       zip_safe=False,
       install_requires=[
           'setuptools',
-          'python-ldap >= 3.2.0',
+          'Zope >= 4.1.3',
+          'python-ldap',
       ],
       )
