@@ -1,18 +1,19 @@
-__version__="$Revision: 1.1 $"[11:-2]
+__version__ = "$Revision: 1.1 $"[11:-2]
+
 
 class LDAPConnectionAccessors(object):
     """ getters / setters for LDAP Properties """
 
     __ac_permissions__ = (
         ('Access contents information',
-         ('getId','getTitle','getHost','getPort','getBindAs','getBoundAs',
-          'getPW','getDN','getOpenConnection','getBrowsable',
-          'shouldBeOpen','getTransactional',),),
+         ('getId', 'getTitle', 'getHost', 'getPort', 'getBindAs', 'getBoundAs',
+          'getPW', 'getDN', 'getOpenConnection', 'getBrowsable',
+          'shouldBeOpen', 'getTransactional',),),
         ('Manage properties',
-         ('setID','setTitle','setHost','setPort', 'setBindAs','setPW',
-          'setDN','setOpenConnection','setBrowsable','setBoundAs',
+         ('setID', 'setTitle', 'setHost', 'setPort', 'setBindAs', 'setPW',
+          'setDN', 'setOpenConnection', 'setBrowsable', 'setBoundAs',
           'setTransactional',),),
-        )
+    )
 
     def getId(self):
         return self.id
@@ -73,7 +74,6 @@ class LDAPConnectionAccessors(object):
 
     shouldBeOpen = getOpenConnection
 
-
     def getBrowsable(self):
         """ if true, connection object is set to be browsable through the
         management interface """
@@ -87,7 +87,6 @@ class LDAPConnectionAccessors(object):
         is used.  If FALSE, changes are sent to LDAP immediately. """
         # Default to '1', to emulate the original behavior
         return getattr(self, 'isTransactional', 1)
-
 
     def setTransactional(self, transactional=1):
         self.isTransactional = transactional

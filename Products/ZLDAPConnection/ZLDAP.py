@@ -7,7 +7,9 @@
    Now by Jeffrey P Shell <jeffrey@Digicool.com>.
 """
 import ldap
-import six.moves.urllib.request, six.moves.urllib.parse, six.moves.urllib.error
+import six.moves.urllib.request
+import six.moves.urllib.parse
+import six.moves.urllib.error
 import time
 import Acquisition
 import AccessControl
@@ -19,56 +21,55 @@ from App.special_dtml import HTMLFile
 from . import LDCAccessors
 from .Entry import ZopeEntry, GenericEntry, TransactionalEntry
 
-ConnectionError='ZLDAP Connection Error'
+ConnectionError = 'ZLDAP Connection Error'
 
 manage_addZLDAPConnectionForm = HTMLFile('add', globals())
+
 
 class NoBrainer:
     """ Empty class for mixin to EntryFactory """
 
-class ZLDAPConnection(
-    Acquisition.Implicit,
-    Persistent, OFS.SimpleItem.Item,
-    LDCAccessors.LDAPConnectionAccessors,
-    AccessControl.Role.RoleManager):
+
+class ZLDAPConnection(Acquisition.Implicit, Persistent, OFS.SimpleItem.Item,
+                      LDCAccessors.LDAPConnectionAccessors,
+                      AccessControl.Role.RoleManager):
     '''LDAP Connection Object'''
 
-    isPrincipiaFolderish=1
+    isPrincipiaFolderish = 1
 
-    meta_type='LDAP Connection'
+    meta_type = 'LDAP Connection'
     zmi_icon = 'fa fa-server'
 
-    manage_options=(
-        {'label':'Connection Properties','action':'manage_main'},
-        {'label':'Open/Close','action':'manage_connection'},
-        {'label':'Browse', 'action':'manage_browse'},
-        {'label':'Security','action':'manage_access'},
-        )
+    manage_options = (
+        {'label': 'Connection Properties', 'action': 'manage_main'},
+        {'label': 'Open/Close', 'action': 'manage_connection'},
+        {'label': 'Browse', 'action': 'manage_browse'},
+        {'label': 'Security', 'action': 'manage_access'},
+    )
 
-    __ac_permissions__=(
+    __ac_permissions__ = (
         ('Access contents information',
          ('canBrowse',),),
-        ('View management screens',('manage_tabs','manage_main'),
+        ('View management screens', ('manage_tabs', 'manage_main'),
          ('Manager',)),
-        ('Edit connection',('manage_edit',),('Manager',)),
-        ('Change permissions',('manage_access',)),
-        ('Open/Close Connection',('manage_connection',
-                                  'manage_open','manage_close',),
+        ('Edit connection', ('manage_edit',), ('Manager',)),
+        ('Change permissions', ('manage_access',)),
+        ('Open/Close Connection', ('manage_connection',
+                                   'manage_open', 'manage_close',),
          ('Manager',)),
-        ('Browse Connection Entries', ('manage_browse',),('Manager',),),
-        )
+        ('Browse Connection Entries', ('manage_browse',), ('Manager',),),
+    )
 
-    manage_browse=HTMLFile('browse',globals())
-    manage_connection=HTMLFile('connection',globals())
+    manage_browse = HTMLFile('browse', globals())
+    manage_connection = HTMLFile('connection', globals())
 
-    ### dealing with browseability on the root.
+    # dealing with browseability on the root.
     def canBrowse(self):
         """ Returns true if the connection is open *and* the '_canBrowse'
         property is set to true """
         return self.shouldBeOpen() and self.getBrowsable()
 
-
-    ### constructor
+    # constructor
     def __init__(self, id, title, host, port, basedn, bind_as, pw, openc,
                  transactional=1):
         "init method"
@@ -87,9 +88,10 @@ class ZLDAPConnection(
         self.setTransactional(transactional)
 
         # if connection is specified to be open, open it up
-        if openc: self._open()
+        if openc:
+            self._open()
 
-    ### upgrade path...
+    # upgrade path...
     def __setstate__(self, state):
         # Makes sure we have an Entry class now
         self._refreshEntryClass()
@@ -98,7 +100,7 @@ class ZLDAPConnection(
         self._v_delete = []
         self._v_openc = 0
 
-    ### Entry Factory stuff
+    # Entry Factory stuff
     def _refreshEntryClass(self):
         """ This class sets up the Entry class used to return results. """
         transactional = self.getTransactional()
@@ -118,9 +120,9 @@ class ZLDAPConnection(
         taking into account transactional versus non-transactional """
         return getattr(self, '_v_entryclass', self._refreshEntryClass())
 
-    ### Tree stuff
+    # Tree stuff
     def __bobo_traverse__(self, REQUEST, key):
-        key=six.moves.urllib.parse.unquote(key)
+        key = six.moves.urllib.parse.unquote(key)
         if hasattr(self, key):
             return getattr(self, key)
         return self.getRoot()[key]
@@ -137,31 +139,32 @@ class ZLDAPConnection(
         else:
             return []
 
-    #### TransactionalObjectManager stuff #####
-    def tpc_begin(self,*ignored):
-        #make sure we're open!
-        if not self.__ping():      #we're not open
+    # TransactionalObjectManager stuff #####
+    def tpc_begin(self, *ignored):
+        # make sure we're open!
+        if not self.__ping():      # we're not open
             raise ConnectionError
-        self._v_okobjects=[]
+        self._v_okobjects = []
 
     def commit(self, o, *ignored):
         ' o = object to commit '
         # check to see if object exists
-        oko=[]
+        oko = []
         if self.hasEntry(o.dn):
             oko.append(o)
         elif o._isNew or o._isDeleted:
             oko.append(o)
-        self._v_okobjects=oko
+        self._v_okobjects = oko
 
     def tpc_finish(self, *ignored):
         " really really commit and DON'T FAIL "
-        oko=self._v_okobjects
-        self._isCommitting=1
-        d=getattr(self,'_v_delete',[])
+        oko = self._v_okobjects
+        self._isCommitting = 1
+        d = getattr(self, '_v_delete', [])
 
-        for deldn in d: self._deleteEntry(deldn)
-        self._v_delete=[]
+        for deldn in d:
+            self._deleteEntry(deldn)
+        self._v_delete = []
 
         for o in oko:
             try:
@@ -171,13 +174,13 @@ class ZLDAPConnection(
                     # the mass delete has happened
                 elif o._isNew:
                     self._addEntry(o.dn, list(o._data.items()))
-                    o._isNew=0
+                    o._isNew = 0
                     del self._v_add[o.dn]
                 else:
                     o._modify()
-                o._registered=0
-            except:
-                pass    #XXX We should log errors here
+                o._registered = 0
+            except Exception:
+                pass    # XXX We should log errors here
 
         del self._v_okobjects
         del self._isCommitting
@@ -187,22 +190,23 @@ class ZLDAPConnection(
         " really really rollback and DON'T FAIL "
         try:
             self._abort()
-        except:
-            pass        #XXX We should also log errors here
+        except Exception:
+            pass        # XXX We should also log errors here
 
     def abort(self, o, *ignored):
-        if o.dn in getattr(self,'_v_delete',()):
+        if o.dn in getattr(self, '_v_delete', ()):
             self._v_delete.remove(o.dn)
-        if o._isDeleted: o.undelete()
+        if o._isDeleted:
+            o.undelete()
         o._rollback()
-        o._registered=0
+        o._registered = 0
         if o._isNew:
-            if o.dn in list(getattr(self,'_v_add',{}).keys()):
+            if o.dn in list(getattr(self, '_v_add', {}).keys()):
                 del self._v_add[o.dn]
         self.GetConnection().destroy_cache()
 
     def _abort(self):
-        oko=self._v_okobjects
+        oko = self._v_okobjects
         for o in oko:
             self.abort(o)
         self.GetConnection().destroy_cache()
@@ -210,50 +214,49 @@ class ZLDAPConnection(
     def tpc_vote(self, *ignored):
         pass
 
-
-    ### getting entries and attributes
-
+    # getting entries and attributes
     def hasEntry(self, dn):
-        if dn in getattr(self, '_v_add',{}):
-            #object is marked for adding
+        if dn in getattr(self, '_v_add', {}):
+            # object is marked for adding
             return 1
-        elif dn in getattr(self,'_v_delete',()):
-            #object is marked for deletion
+        elif dn in getattr(self, '_v_delete', ()):
+            # object is marked for deletion
             return 0
 
         try:
-            e=self._connection().search_s(dn, ldap.SCOPE_BASE,
-                                          'objectclass=*')
-            if e: return 1
+            e = self._connection().search_s(dn, ldap.SCOPE_BASE,
+                                            'objectclass=*')
+            if e:
+                return 1
         except ldap.NO_SUCH_OBJECT:
             return 0
         return 0
 
     def getRawEntry(self, dn):
         " return raw entry from LDAP module "
-        if dn in getattr(self, '_v_add',{}):
+        if dn in getattr(self, '_v_add', {}):
             return (dn, self._v_add[dn]._data)
-        elif dn in getattr(self,'_v_delete',()):
+        elif dn in getattr(self, '_v_delete', ()):
             raise ldap.NO_SUCH_OBJECT("Entry '%s' has been deleted" % dn)
 
         try:
-            e=self._connection().search_s(
+            e = self._connection().search_s(
                 dn, ldap.SCOPE_BASE, 'objectclass=*'
-                )
-            if e: return e[0]
-        except:
+            )
+            if e:
+                return e[0]
+        except Exception:
             raise ldap.NO_SUCH_OBJECT("Cannot retrieve entry '%s'" % dn)
-
 
     def getEntry(self, dn, o=None):
         " return **unwrapped** Entry object, unless o is specified "
         Entry = self._EntryFactory()
 
-        if dn in getattr(self, '_v_add',{}):
-            e=self._v_add[dn]
+        if dn in getattr(self, '_v_add', {}):
+            e = self._v_add[dn]
         else:
-            e=self.getRawEntry(dn)
-            e=Entry(e[0],e[1],self)
+            e = self.getRawEntry(dn)
+            e = Entry(e[0], e[1], self)
 
         if o is not None:
             return e.__of__(o)
@@ -268,109 +271,109 @@ class ZLDAPConnection(
         " get raw attributes from entry from LDAP module "
         return self.getRawEntry(dn)[1]
 
-    ### listing subentries
+    # listing subentries
 
     def getRawSubEntries(self, dn):
         " get the raw entry objects of entry dn's immediate children "
         # XXX Do something soon to account for added but noncommited..?
-        if dn in getattr(self,'_v_delete',()):
+        if dn in getattr(self, '_v_delete', ()):
             raise ldap.NO_SUCH_OBJECT
-        results=self._connection().search_s(
+        results = self._connection().search_s(
             dn, ldap.SCOPE_ONELEVEL, 'objectclass=*')
-        r=[]
+        r = []
         for entry in results:
-            #make sure that the subentry isn't marked for deletion
-            if entry[0] not in getattr(self, '_v_delete',()):
+            # make sure that the subentry isn't marked for deletion
+            if entry[0] not in getattr(self, '_v_delete', ()):
                 r.append(entry)
         return r
 
     def getSubEntries(self, dn, o=None):
         Entry = self._EntryFactory()
 
-        r=[]
-        se=self.getRawSubEntries(dn)
+        r = []
+        se = self.getRawSubEntries(dn)
 
         for entry in se:
-            e=Entry(entry[0],entry[1],self)
+            e = Entry(entry[0], entry[1], self)
             if o is not None:
-                e=e.__of__(o)
+                e = e.__of__(o)
             r.append(e)
 
         return r
 
-    ### modifying entries
+    # modifying entries
     def _modifyEntry(self, dn, modlist):
-        if not getattr(self,'_isCommitting',0):
+        if not getattr(self, '_isCommitting', 0):
             raise AttributeError('Cannot modify unless in a commit')
-            #someone's trying to be sneaky and modify an object
-            #outside of a commit.  We're not going to allow that!
-        c=self._connection()
+            # someone's trying to be sneaky and modify an object
+            # outside of a commit.  We're not going to allow that!
+        c = self._connection()
         c.modify_s(dn, modlist)
 
-    ### deleting entries
+    # deleting entries
     def _registerDelete(self, dn):
         " register DN for deletion "
-        d=getattr(self,'_v_delete',[])
+        d = getattr(self, '_v_delete', [])
         if dn not in d:
             d.append(dn)
-        self._v_delete=d
+        self._v_delete = d
 
     def _unregisterDelete(self, dn):
         " unregister DN for deletion "
-        d=getattr(self, '_v_delete',[])
-        if dn in d: d.remove(dn)
-        self._v_delete=d
+        d = getattr(self, '_v_delete', [])
+        if dn in d:
+            d.remove(dn)
+        self._v_delete = d
 
         self._unregisterAdd(dn)
 
     def _deleteEntry(self, dn):
-        if not getattr(self, '_isCommitting',0):
+        if not getattr(self, '_isCommitting', 0):
             raise AttributeError('Cannot delete unless in a commit')
-        c=self._connection()
+        c = self._connection()
         c.delete_s(dn)
 
-    ### adding entries
+    # adding entries
     def _registerAdd(self, o):
-        a=getattr(self, '_v_add',{})
+        a = getattr(self, '_v_add', {})
         if o.dn not in a:
-            a[o.dn]=o
-        self._v_add=a
+            a[o.dn] = o
+        self._v_add = a
 
     def _unregisterAdd(self, o=None, dn=None):
-        a=getattr(self, '_v_add',{})
+        a = getattr(self, '_v_add', {})
         if o and o in list(a.values()):
             del a[o.dn]
         elif dn and dn in a:
             del a[dn]
-        self._v_add=a
+        self._v_add = a
 
     def _addEntry(self, dn, attrs):
-        if not getattr(self, '_isCommitting',0):
+        if not getattr(self, '_isCommitting', 0):
             raise AttributeError('Cannot add unless in a commit')
-        c=self._connection()
+        c = self._connection()
         c.add_s(dn, attrs)
 
-    ### other stuff
+    # other stuff
     def title_and_id(self):
         "title and id, with conn state"
-        s=ZLDAPConnection.inheritedAttribute('title_and_id')(self)
+        s = ZLDAPConnection.inheritedAttribute('title_and_id')(self)
         if self.shouldBeOpen():
-            s="%s (connected)" % s
+            s = "%s (connected)" % s
         else:
-            s='%s (<font color="red"> not connected</font>)' % s
+            s = '%s (<font color="red"> not connected</font>)' % s
         return s
 
-
-    ### connection checking stuff
-
+    # connection checking stuff
     def _connection(self):
         if self.openc:
-            if not self.isOpen(): self._open()
+            if not self.isOpen():
+                self._open()
             return self._v_conn
         else:
             raise ConnectionError('Connection Closed')
 
-    GetConnection=_connection
+    GetConnection = _connection
 
     def isOpen(self):
         """ quickly checks to see if the connection's open
@@ -389,10 +392,10 @@ class ZLDAPConnection(
     def __ping(self):
         " more expensive check on the connection and validity of conn "
         try:
-            self._connection().search_s(self.dn,ldap.SCOPE_BASE,
+            self._connection().search_s(self.dn, ldap.SCOPE_BASE,
                                         'objectclass=*')
             return 1
-        except:
+        except Exception:
             self._close()
             return 0
 
@@ -400,21 +403,21 @@ class ZLDAPConnection(
         """ open a connection """
         try:
             self._close()
-        except:
+        except Exception:
             pass
-        self._v_conn = ldap.initialize('ldaps://%s:%s' % (self.host, self.port))
+        self._v_conn = ldap.initialize('ldaps://%s:%s' % (self.host,
+                                                          self.port))
         try:
             self._v_conn.whoami_s()
         except ldap.SERVER_DOWN:
             self._v_conn = ldap.initialize(
                 'ldap://%s:%s' % (self.host, self.port))
-        #self._v_conn.enable_cache()
         try:
             self._v_conn.simple_bind_s(self.bind_as, self.pw)
         except ldap.NO_SUCH_OBJECT:
             return """
    Error: LDAP Server returned `no such object' for %s. Possibly
-   the bind string or password are incorrect"""%(self.bind_as)
+   the bind string or password are incorrect""" % (self.bind_as)
         self._v_openc = int(time.time())
 
     def manage_open(self, REQUEST=None):
@@ -424,18 +427,20 @@ class ZLDAPConnection(
         if not getattr(self, '_v_openc', 0):
             return ret
         if REQUEST is not None:
-            m='Connection has been opened.'
-            return self.manage_connection(self,REQUEST,manage_tabs_message=m)
+            m = 'Connection has been opened.'
+            return self.manage_connection(self, REQUEST, manage_tabs_message=m)
 
     def _close(self):
         """ close a connection """
         if self.getOpenConnection() == 0:
-            #I'm already closed, but someone is still trying to close me
+            # I'm already closed, but someone is still trying to close me
             self._v_conn = None
             self._v_openc = 0
         else:
-            try: self._v_conn.unbind_s()
-            except AttributeError: pass
+            try:
+                self._v_conn.unbind_s()
+            except AttributeError:
+                pass
             self._v_conn = None
             self._v_openc = 0
 
@@ -443,18 +448,17 @@ class ZLDAPConnection(
         """ close a connection. """
         self._close()
         if REQUEST is not None:
-            m='Connection has been closed.'
-            return self.manage_connection(self,REQUEST,manage_tabs_message=m)
+            m = 'Connection has been closed.'
+            return self.manage_connection(self, REQUEST, manage_tabs_message=m)
 
     def manage_clearcache(self, REQUEST=None):
         """ clear the cache """
         self._connection().destroy_cache()
         if REQUEST is not None:
-            m='Cache has been cleared.'
-            return self.manage_connection(self,REQUEST,manage_tabs_message=m)
+            m = 'Cache has been cleared.'
+            return self.manage_connection(self, REQUEST, manage_tabs_message=m)
 
-
-    manage_main=HTMLFile("edit",globals())
+    manage_main = HTMLFile("edit", globals())
 
     def manage_edit(self, title, hostport, basedn, bind_as, pw, openc=0,
                     canBrowse=0, transactional=1, REQUEST=None):
@@ -490,24 +494,24 @@ class ZLDAPConnection(
             return MessageDialog(
                 title='Edited',
                 message='<strong>%s</strong> has been edited.' % self.id,
-                action ='./manage_main',
-                )
+                action='./manage_main',
+            )
 
-##    def GetConnection(self):
-##      "return connection object"
-##      if not self.openc:
-##          raise "LDAPConnectionError", "LDAP connection not open"
-##      else:
-##          if not hasattr(self, '_v_conn'):
-##              self._open()
-##          return self._v_conn
-
+#    def GetConnection(self):
+#      "return connection object"
+#      if not self.openc:
+#          raise "LDAPConnectionError", "LDAP connection not open"
+#      else:
+#          if not hasattr(self, '_v_conn'):
+#              self._open()
+#          return self._v_conn
 
     def _isAnLDAPConnection(self):
         return 1
 
+
 def splitHostPort(hostport):
-    l = str.split(hostport,':')
+    l = str.split(hostport, ':')
     host = l[0]
     if len(l) == 1:
         port = 389
