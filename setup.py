@@ -31,4 +31,10 @@ setup(name=NAME,
       install_requires=[
           'setuptools',
       ],
+      extras_require={
+          'test': [
+              'plone.app.testing',
+              'plone.app.robotframework',
+          ],
+      },
       )
