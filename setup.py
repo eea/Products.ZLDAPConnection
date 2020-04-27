@@ -30,6 +30,7 @@ setup(name=NAME,
       zip_safe=False,
       install_requires=[
           'setuptools',
+          'plone-ldap',
       ],
       extras_require={
           'test': [
