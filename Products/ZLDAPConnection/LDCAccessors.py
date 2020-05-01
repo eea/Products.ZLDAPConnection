@@ -1,3 +1,5 @@
+''' LDC Accessors module '''
+# pylint: disable=too-many-instance-attributes
 __version__ = "$Revision: 1.1 $"[11:-2]
 
 
@@ -16,15 +18,25 @@ class LDAPConnectionAccessors(object):
     )
 
     def getId(self):
+        """getId."""
         return self.id
 
-    def setId(self, id):
-        self.id = id
+    def setId(self, ob_id):
+        """setId.
+
+        :param id:
+        """
+        self.id = ob_id
 
     def getTitle(self):
+        """getTitle."""
         return self.title
 
     def setTitle(self, title):
+        """setTitle.
+
+        :param title:
+        """
         self.title = title
 
     def getHost(self):
@@ -32,6 +44,10 @@ class LDAPConnectionAccessors(object):
         return self.host
 
     def setHost(self, host):
+        """setHost.
+
+        :param host:
+        """
         self.host = host
 
     def getPort(self):
@@ -39,6 +55,10 @@ class LDAPConnectionAccessors(object):
         return self.port
 
     def setPort(self, port):
+        """setPort.
+
+        :param port:
+        """
         self.port = port
 
     def getBindAs(self):
@@ -47,6 +67,10 @@ class LDAPConnectionAccessors(object):
     getBoundAs = getBindAs
 
     def setBindAs(self, bindAs):
+        """setBindAs.
+
+        :param bindAs:
+        """
         self.bind_as = bindAs
     setBoundAs = setBindAs
 
@@ -55,12 +79,21 @@ class LDAPConnectionAccessors(object):
         return self.pw
 
     def setPW(self, pw):
+        """setPW.
+
+        :param pw:
+        """
         self.pw = pw
 
     def getDN(self):
+        """getDN."""
         return self.dn
 
     def setDN(self, dn):
+        """setDN.
+
+        :param dn:
+        """
         self.dn = dn
 
     def getOpenConnection(self):
@@ -70,6 +103,10 @@ class LDAPConnectionAccessors(object):
         return self.openc
 
     def setOpenConnection(self, openc):
+        """setOpenConnection.
+
+        :param openc:
+        """
         self.openc = openc
 
     shouldBeOpen = getOpenConnection
@@ -80,6 +117,10 @@ class LDAPConnectionAccessors(object):
         return getattr(self, '_canBrowse', 0)
 
     def setBrowsable(self, browsable):
+        """setBrowsable.
+
+        :param browsable:
+        """
         self._canBrowse = browsable
 
     def getTransactional(self):
@@ -89,12 +130,12 @@ class LDAPConnectionAccessors(object):
         return getattr(self, 'isTransactional', 1)
 
     def setTransactional(self, transactional=1):
+        ''' We have a fair amount of transaction-sensitive methods that
+        only want to run during a commit, and these are the ones that
+        actually send the data to the LDAP server.  When in non-transactional
+        mode, we want these things to run at any time.  In a sense, we're
+        always committing.'''
         self.isTransactional = transactional
         self._refreshEntryClass()
-        # We have a fair amount of transaction-sensitive methods that
-        # only want to run during a commit, and these are the ones that
-        # actually send the data to the LDAP server.  When in non-transactional
-        # mode, we want these things to run at any time.  In a sense, we're
-        # always committing.
         if not transactional:
             self._isCommitting = 1

@@ -5,6 +5,10 @@ from . import ZLDAP
 
 
 def initialize(context):
+    """initialize.
+
+    :param context:
+    """
 
     context.registerClass(
         ZLDAP.ZLDAPConnection,

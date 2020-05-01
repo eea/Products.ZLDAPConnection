@@ -6,11 +6,13 @@
 
    Now by Jeffrey P Shell <jeffrey@Digicool.com>.
 """
-import ldap
+# pylint: disable=no-init,old-style-class,too-many-public-methods
+# pylint: disable=too-many-instance-attributes,too-many-arguments
+import time
 import six.moves.urllib.request
 import six.moves.urllib.parse
 import six.moves.urllib.error
-import time
+import ldap
 import Acquisition
 import AccessControl
 import OFS
@@ -70,14 +72,14 @@ class ZLDAPConnection(Acquisition.Implicit, Persistent, OFS.SimpleItem.Item,
         return self.shouldBeOpen() and self.getBrowsable()
 
     # constructor
-    def __init__(self, id, title, host, port, basedn, bind_as, pw, openc,
+    def __init__(self, ob_id, title, host, port, basedn, bind_as, pw, openc,
                  transactional=1):
         "init method"
         self._v_conn = None
         self._v_delete = []
         self._v_openc = 0
 
-        self.setId(id)
+        self.setId(ob_id)
         self.setTitle(title)
         self.setHost(host)
         self.setPort(port)
@@ -110,6 +112,8 @@ class ZLDAPConnection(Acquisition.Implicit, Persistent, OFS.SimpleItem.Item,
             EntryBase = GenericEntry
 
         class LdapEntry(EntryBase, ZopeEntry):
+            """LdapEntry."""
+
             pass
 
         self._v_entryclass = LdapEntry
@@ -122,32 +126,43 @@ class ZLDAPConnection(Acquisition.Implicit, Persistent, OFS.SimpleItem.Item,
 
     # Tree stuff
     def __bobo_traverse__(self, REQUEST, key):
+        """__bobo_traverse__.
+
+        :param REQUEST:
+        :param key:
+        """
         key = six.moves.urllib.parse.unquote(key)
         if hasattr(self, key):
             return getattr(self, key)
         return self.getRoot()[key]
 
     def tpId(self):
+        """tpId."""
         return self.id
 
     def tpURL(self):
+        """tpURL."""
         return self.id
 
     def tpValues(self):
+        """tpValues."""
         if self.canBrowse():
             return self.getRoot().tpValues()
-        else:
-            return []
+        return []
 
     # TransactionalObjectManager stuff #####
     def tpc_begin(self, *ignored):
+        """tpc_begin.
+
+        :param ignored:
+        """
         # make sure we're open!
         if not self.__ping():      # we're not open
             raise ConnectionError
         self._v_okobjects = []
 
     def commit(self, o, *ignored):
-        ' o = object to commit '
+        ''' o = object to commit '''
         # check to see if object exists
         oko = []
         if self.hasEntry(o.dn):
@@ -180,7 +195,7 @@ class ZLDAPConnection(Acquisition.Implicit, Persistent, OFS.SimpleItem.Item,
                     o._modify()
                 o._registered = 0
             except Exception:
-                pass    # XXX We should log errors here
+                pass    # X X X We should log errors here
 
         del self._v_okobjects
         del self._isCommitting
@@ -191,9 +206,14 @@ class ZLDAPConnection(Acquisition.Implicit, Persistent, OFS.SimpleItem.Item,
         try:
             self._abort()
         except Exception:
-            pass        # XXX We should also log errors here
+            pass        # X X X We should also log errors here
 
     def abort(self, o, *ignored):
+        """abort.
+
+        :param o:
+        :param ignored:
+        """
         if o.dn in getattr(self, '_v_delete', ()):
             self._v_delete.remove(o.dn)
         if o._isDeleted:
@@ -206,16 +226,25 @@ class ZLDAPConnection(Acquisition.Implicit, Persistent, OFS.SimpleItem.Item,
         self.GetConnection().destroy_cache()
 
     def _abort(self):
+        """_abort."""
         oko = self._v_okobjects
         for o in oko:
             self.abort(o)
         self.GetConnection().destroy_cache()
 
     def tpc_vote(self, *ignored):
+        """tpc_vote.
+
+        :param ignored:
+        """
         pass
 
     # getting entries and attributes
     def hasEntry(self, dn):
+        """hasEntry.
+
+        :param dn:
+        """
         if dn in getattr(self, '_v_add', {}):
             # object is marked for adding
             return 1
@@ -260,8 +289,7 @@ class ZLDAPConnection(Acquisition.Implicit, Persistent, OFS.SimpleItem.Item,
 
         if o is not None:
             return e.__of__(o)
-        else:
-            return e
+        return e
 
     def getRoot(self):
         " return root entry object "
@@ -275,7 +303,7 @@ class ZLDAPConnection(Acquisition.Implicit, Persistent, OFS.SimpleItem.Item,
 
     def getRawSubEntries(self, dn):
         " get the raw entry objects of entry dn's immediate children "
-        # XXX Do something soon to account for added but noncommited..?
+        # X X X Do something soon to account for added but noncommited..?
         if dn in getattr(self, '_v_delete', ()):
             raise ldap.NO_SUCH_OBJECT
         results = self._connection().search_s(
@@ -288,6 +316,11 @@ class ZLDAPConnection(Acquisition.Implicit, Persistent, OFS.SimpleItem.Item,
         return r
 
     def getSubEntries(self, dn, o=None):
+        """getSubEntries.
+
+        :param dn:
+        :param o:
+        """
         Entry = self._EntryFactory()
 
         r = []
@@ -303,6 +336,11 @@ class ZLDAPConnection(Acquisition.Implicit, Persistent, OFS.SimpleItem.Item,
 
     # modifying entries
     def _modifyEntry(self, dn, modlist):
+        """_modifyEntry.
+
+        :param dn:
+        :param modlist:
+        """
         if not getattr(self, '_isCommitting', 0):
             raise AttributeError('Cannot modify unless in a commit')
             # someone's trying to be sneaky and modify an object
@@ -328,6 +366,10 @@ class ZLDAPConnection(Acquisition.Implicit, Persistent, OFS.SimpleItem.Item,
         self._unregisterAdd(dn)
 
     def _deleteEntry(self, dn):
+        """_deleteEntry.
+
+        :param dn:
+        """
         if not getattr(self, '_isCommitting', 0):
             raise AttributeError('Cannot delete unless in a commit')
         c = self._connection()
@@ -335,12 +377,21 @@ class ZLDAPConnection(Acquisition.Implicit, Persistent, OFS.SimpleItem.Item,
 
     # adding entries
     def _registerAdd(self, o):
+        """_registerAdd.
+
+        :param o:
+        """
         a = getattr(self, '_v_add', {})
         if o.dn not in a:
             a[o.dn] = o
         self._v_add = a
 
     def _unregisterAdd(self, o=None, dn=None):
+        """_unregisterAdd.
+
+        :param o:
+        :param dn:
+        """
         a = getattr(self, '_v_add', {})
         if o and o in list(a.values()):
             del a[o.dn]
@@ -349,6 +400,11 @@ class ZLDAPConnection(Acquisition.Implicit, Persistent, OFS.SimpleItem.Item,
         self._v_add = a
 
     def _addEntry(self, dn, attrs):
+        """_addEntry.
+
+        :param dn:
+        :param attrs:
+        """
         if not getattr(self, '_isCommitting', 0):
             raise AttributeError('Cannot add unless in a commit')
         c = self._connection()
@@ -366,12 +422,13 @@ class ZLDAPConnection(Acquisition.Implicit, Persistent, OFS.SimpleItem.Item,
 
     # connection checking stuff
     def _connection(self):
+        """_connection."""
         if self.openc:
             if not self.isOpen():
                 self._open()
             return self._v_conn
         else:
-            raise ConnectionError('Connection Closed')
+            raise ConnectionError
 
     GetConnection = _connection
 
@@ -386,8 +443,7 @@ class ZLDAPConnection(Acquisition.Implicit, Persistent, OFS.SimpleItem.Item,
             return 0
         if self._v_conn is None or not self.shouldBeOpen():
             return 0
-        else:
-            return 1
+        return 1
 
     def __ping(self):
         " more expensive check on the connection and validity of conn "
@@ -511,21 +567,25 @@ class ZLDAPConnection(Acquisition.Implicit, Persistent, OFS.SimpleItem.Item,
 
 
 def splitHostPort(hostport):
-    l = str.split(hostport, ':')
-    host = l[0]
-    if len(l) == 1:
+    """splitHostPort.
+
+    :param hostport:
+    """
+    hp_list = str.split(hostport, ':')
+    host = hp_list[0]
+    if len(hp_list) == 1:
         port = 389
     else:
-        port = int(l[1])
+        port = int(hp_list[1])
     return host, port
 
 
-def manage_addZLDAPConnection(self, id, title, hostport,
+def manage_addZLDAPConnection(self, c_id, title, hostport,
                               basedn, bind_as, pw, openc,
                               REQUEST=None):
     """create an LDAP connection and install it"""
     host, port = splitHostPort(hostport)
-    conn = ZLDAPConnection(id, title, host, port, basedn, bind_as, pw, openc)
-    self._setObject(id, conn)
+    conn = ZLDAPConnection(c_id, title, host, port, basedn, bind_as, pw, openc)
+    self._setObject(c_id, conn)
     if REQUEST is not None:
         return self.manage_main(self, REQUEST)

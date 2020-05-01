@@ -1,17 +1,18 @@
 """ LDAP Entry Objects
 """
+# pylint: disable=too-many-instance-attributes,dangerous-default-value
+import string
 from six.moves import filter
 from six.moves import map
-from transaction import commit
-import Acquisition
-import OFS
-import string
-from App.Dialogs import MessageDialog
-from App.special_dtml import HTMLFile
-import ldap
 import six.moves.urllib.request
 import six.moves.urllib.parse
 import six.moves.urllib.error
+from transaction import commit
+import Acquisition
+import OFS
+from App.Dialogs import MessageDialog
+from App.special_dtml import HTMLFile
+import ldap
 
 ConnectionError = 'ZLDAP Connection Error'
 
@@ -20,8 +21,7 @@ def isNotBlank(s):
     '''test for non-blank strings'''
     if isinstance(s, str) and s == '':
         return 0
-    else:
-        return 1
+    return 1
 
 # class AttrWrap(UserList.UserList):
 #    """simple attr-wrapper for LDAP attributes"""
@@ -67,7 +67,7 @@ class GenericEntry(Acquisition.Implicit):
 
         self._isNew = isNew
         if isNew:
-            pass                        # XXX need to handle creation here
+            pass                        # X X X need to handle creation here
         self._isDeleted = 0             # Deletion flag
         self.__subentries = {}          # subentries
         self._mod_delete = []
@@ -111,6 +111,10 @@ class GenericEntry(Acquisition.Implicit):
 
     # Direct access for setting/getting/unsetting attributes
     def get(self, attr):
+        """get.
+
+        :param attr:
+        """
         if attr in self._data:
             return self._data[attr]
         else:
@@ -157,12 +161,13 @@ class GenericEntry(Acquisition.Implicit):
     # a .set calls this directly, while in the TransactionalModel this
     # gets called by the Transaction system at commit time.
     def _modify(self):
+        """_modify."""
         modlist = []
 
         for attribute, values in self._data.items():
             modlist.append((ldap.MOD_REPLACE, attribute, values))
-            for attribute in self._mod_delete:
-                modlist.append((ldap.MOD_DELETE, attribute, None))
+            for del_attribute in self._mod_delete:
+                modlist.append((ldap.MOD_DELETE, del_attribute, None))
 
         self._connection()._modifyEntry(self.dn, modlist)
         self._mod_delete = []
@@ -170,16 +175,22 @@ class GenericEntry(Acquisition.Implicit):
 
     # Get the ZLDAPConnection object.
     def _connection(self):
+        """_connection."""
         if self.__connection is None:
-            raise ConnectionError('Cannot Get Connection')
+            raise ConnectionError
         else:
             return self.__connection
 
     def _setConnection(self, connection):
+        """_setConnection.
+
+        :param connection:
+        """
         self.__connection = connection
 
     # Subentries
     def _subentries(self):
+        """_subentries."""
         if not self.__subentries:
             # self.__subentries is empty, look up our subentries
             # in the connection object and then set self.__subentries
@@ -192,12 +203,22 @@ class GenericEntry(Acquisition.Implicit):
         return self.__subentries
 
     def _clearSubentries(self):
+        """_clearSubentries."""
         self.__subentries = {}
 
     def _setSubentry(self, entryid, entry):
+        """_setSubentry.
+
+        :param entryid:
+        :param entry:
+        """
         self.__subentries[entryid] = entry
 
     def _delSubentry(self, entryid):
+        """_delSubentry.
+
+        :param entryid:
+        """
         subs = self.__subentries
         if entryid in subs:
             del self.__subentries[entryid]
@@ -212,6 +233,10 @@ class GenericEntry(Acquisition.Implicit):
             self._delSubentry(entry.id)  # Delete our own reference
 
     def _delete(self, entry):
+        """_delete.
+
+        :param entry:
+        """
         conn = self._connection()
 
         entry._beforeDelete()
@@ -348,9 +373,11 @@ class TransactionalEntry(Acquisition.Implicit):
 
     # Transaction Related methods
     def _reset(self):
+        """_reset."""
         self._rollback()
 
     def _rollback(self):
+        """_rollback."""
         conn = self._connection()
         if not self._isNew:
             self._data = conn.getAttributes(self.dn)
@@ -360,6 +387,10 @@ class TransactionalEntry(Acquisition.Implicit):
 
     # Adding and Deleting sub-entries.
     def _beforeDelete(self, **ignored):
+        """_beforeDelete.
+
+        :param ignored:
+        """
         c = self._connection()
         for entry in self._subentries().values():
             entry.manage_beforeDelete()
@@ -368,6 +399,10 @@ class TransactionalEntry(Acquisition.Implicit):
             del self._subentries()[entry.id]
 
     def _delete(self, o):
+        """_delete.
+
+        :param o:
+        """
         c = self._connection()
         o._beforeDelete()
         c._registerDelete(o.dn)
@@ -378,6 +413,10 @@ class TransactionalEntry(Acquisition.Implicit):
         del self._subentries()[o.id]
 
     def _delete_dn(self, rdn):
+        """_delete_dn.
+
+        :param rdn:
+        """
         o = self[rdn]
         self._delete(o)
 
@@ -422,7 +461,7 @@ class TransactionalEntry(Acquisition.Implicit):
 class ZopeEntry(OFS.SimpleItem.Item):
     '''Entry Object'''
 
-    '''Initialazation Routines'''
+    # Initialization Routines
 
     manage_options = (
         {'label': 'Attributes', 'action': 'manage_attributes'},
@@ -445,6 +484,7 @@ class ZopeEntry(OFS.SimpleItem.Item):
     isPrincipiaFolderish = 1
 
     def attributesMap(self):
+        """attributesMap."""
         return list(self._data.items())
 
     def __bobo_traverse__(self, REQUEST, key):
@@ -452,15 +492,16 @@ class ZopeEntry(OFS.SimpleItem.Item):
         key = six.moves.urllib.parse.unquote(key)
         if key in self.objectIds():
             return self[key]
-        else:
-            return getattr(self, key)
+        return getattr(self, key)
 
     # Tree Machinery
 
     def tpValues(self):
+        """tpValues."""
         return list(self._subentries().values())
 
     def tpId(self):
+        """tpId."""
         return self.id
 
     def tpURL(self):
@@ -469,12 +510,15 @@ class ZopeEntry(OFS.SimpleItem.Item):
 
     # Object Manager-ish Machinery
     def objectValues(self):
+        """objectValues."""
         return list(self._subentries().values())
 
     def objectIds(self):
+        """objectIds."""
         return list(self._subentries().keys())
 
     def objectItems(self):
+        """objectItems."""
         return list(self._subentries().items())
 
     # Zope management stuff
@@ -493,8 +537,7 @@ class ZopeEntry(OFS.SimpleItem.Item):
 
         if REQUEST is not None:
             return self.manage_contents(self, REQUEST)
-        else:
-            return e
+        return e
 
     def manage_newEntryWithAttributes(self, rdn, attributes={}, **kw):
         """ add a new entry with attributes """
@@ -502,10 +545,10 @@ class ZopeEntry(OFS.SimpleItem.Item):
         e = self.addSubentry(rdn, attributes)
         return e                        # return the new entry
 
-    def manage_addAttribute(self, id, values, REQUEST=None):
+    def manage_addAttribute(self, attr_id, values, REQUEST=None):
         """ Add an attribute to an LDAP entry
         """
-        self.set(id, values)
+        self.set(attr_id, values)
 
         if REQUEST is not None:
             return self.manage_attributes(self, REQUEST)
@@ -523,7 +566,7 @@ class ZopeEntry(OFS.SimpleItem.Item):
             message='Your changes have been saved',
             action='manage_attributes')
 
-    def manage_changeAttributes(self, REQUEST=None,  **kw):
+    def manage_changeAttributes(self, REQUEST=None, **kw):
         """Change existing Entry's Attributes.
 
         Change entry's attributes by passing either a mapping object

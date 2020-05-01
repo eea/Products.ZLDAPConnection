@@ -1,5 +1,6 @@
-from setuptools import setup, find_packages
+''' Products.ZLDAPConnection installer '''
 from os.path import join
+from setuptools import setup, find_packages
 
 NAME = 'Products.ZLDAPConnection'
 PATH = NAME.split('.') + ['version.txt']
