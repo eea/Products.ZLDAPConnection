@@ -8,7 +8,7 @@
 """
 # pylint: disable=no-init,old-style-class,too-many-public-methods
 # pylint: disable=too-many-instance-attributes,too-many-arguments
-# pylint: disable=too-many-function-arguments
+# pylint: disable=too-many-function-args
 import time
 import six.moves.urllib.request
 import six.moves.urllib.parse

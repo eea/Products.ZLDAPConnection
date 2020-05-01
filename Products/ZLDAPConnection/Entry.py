@@ -1,7 +1,7 @@
 """ LDAP Entry Objects
 """
 # pylint: disable=too-many-instance-attributes,dangerous-default-value
-# pylint: disable=too-many-function-arguments
+# pylint: disable=too-many-function-args
 import string
 from six.moves import filter
 from six.moves import map
