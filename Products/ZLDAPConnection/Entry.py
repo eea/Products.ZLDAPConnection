@@ -1,6 +1,7 @@
 """ LDAP Entry Objects
 """
 # pylint: disable=too-many-instance-attributes,dangerous-default-value
+# pylint: disable=too-many-function-arguments
 import string
 from six.moves import filter
 from six.moves import map
@@ -73,6 +74,10 @@ class GenericEntry(Acquisition.Implicit):
         self._mod_delete = []
 
     def _init(self, connection):
+        """_init.
+
+        :param connection:
+        """
         self.__connection = connection
         if not self._isNew:
             self._data = connection.getAttributes(self.dn)
@@ -80,6 +85,7 @@ class GenericEntry(Acquisition.Implicit):
             self._data = {}
 
     def _reset(self):
+        """_reset."""
         if self._isNew:
             self._data = {}
         else:

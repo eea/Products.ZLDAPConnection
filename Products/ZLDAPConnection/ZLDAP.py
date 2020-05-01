@@ -8,6 +8,7 @@
 """
 # pylint: disable=no-init,old-style-class,too-many-public-methods
 # pylint: disable=too-many-instance-attributes,too-many-arguments
+# pylint: disable=too-many-function-arguments
 import time
 import six.moves.urllib.request
 import six.moves.urllib.parse
@@ -563,6 +564,7 @@ class ZLDAPConnection(Acquisition.Implicit, Persistent, OFS.SimpleItem.Item,
 #          return self._v_conn
 
     def _isAnLDAPConnection(self):
+        """_isAnLDAPConnection."""
         return 1
 
 
