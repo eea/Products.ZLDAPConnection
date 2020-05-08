@@ -15,7 +15,6 @@ import six.moves.urllib.parse
 import six.moves.urllib.error
 import ldap
 import Acquisition
-import AccessControl
 import OFS
 from Persistence import Persistent
 from App.Dialogs import MessageDialog
@@ -35,7 +34,7 @@ class NoBrainer:
 
 class ZLDAPConnection(Acquisition.Implicit, Persistent, OFS.SimpleItem.Item,
                       LDCAccessors.LDAPConnectionAccessors,
-                      AccessControl.Role.RoleManager):
+                      OFS.role.RoleManager):
     '''LDAP Connection Object'''
 
     isPrincipiaFolderish = 1
