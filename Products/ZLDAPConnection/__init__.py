@@ -1,6 +1,6 @@
 """ LDAP Server Connection Package
 """
-from . import testing
+from .testing import ZLDAPConnectionLayer
 from . import ZLDAP
 
 
@@ -19,5 +19,4 @@ def initialize(context):
                      'Create New Entry Objects',
                      ),
     )
-
-    context.registerClass(testing.ZLDAPConnectionLayer)
+    context.test_layer = ZLDAPConnectionLayer
