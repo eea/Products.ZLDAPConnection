@@ -10,7 +10,7 @@ import six.moves.urllib.parse
 import six.moves.urllib.error
 from transaction import commit
 import Acquisition
-import OFS
+from OFS.SimpleItem import Item
 from App.Dialogs import MessageDialog
 from App.special_dtml import HTMLFile
 import ldap
@@ -464,7 +464,7 @@ class TransactionalEntry(Acquisition.Implicit):
         return entry
 
 
-class ZopeEntry(OFS.SimpleItem.Item):
+class ZopeEntry(Item):
     '''Entry Object'''
 
     # Initialization Routines
